@@ -1,68 +1,89 @@
-# **Business Forecasting Final Exam**
+# **Business Forecasting with Time Series Analysis**
 
-This repository contains the R code and analysis conducted for the **Business Forecasting Final Exam**. The exam focuses on analyzing and forecasting car sales data using various time series techniques.
-
----
-
-## **Dataset**
-- **Name**: `TOTALSA.csv`
-- **Description**: Monthly car sales data in the United States from 2019 to 2024.
-- **Columns**:
-  1. **Date**: Monthly time periods.
-  2. **Sales Units**: Number of cars sold (in millions).
+## **Introduction**
+This repository contains the final exam submission for the Business Forecasting course. The analysis focuses on forecasting time series data using multiple statistical models and evaluating their performance. The dataset includes monthly sales data from 2019 to 2024.
 
 ---
 
-## **Analysis Steps**
-1. **Data Preprocessing**:
-   - Converted `Date` column to a proper date format.
-   - Created a time series object for analysis (`sales_ts_window`).
+## **Contents**
+- **Dataset Overview**
+  - Monthly sales data from 2019 to 2024.
+  - Variables include: `Date`, `Sales Units`.
 
-2. **Exploratory Data Analysis**:
-   - Visualized time series trends and seasonal patterns.
-   - Analyzed summary statistics, seasonal indices, and distributions.
+- **Objectives**
+  - Analyze the time series for trends, seasonality, and stationarity.
+  - Apply various forecasting techniques.
+  - Evaluate and compare forecasting models for accuracy and reliability.
 
-3. **Modeling Techniques**:
-   - **Naïve Forecasting**:
-     - Baseline model using the last observed value for forecasts.
-     - Pros: Simple to implement.
-     - Cons: Does not account for trends or seasonality.
-   - **Moving Averages**:
-     - Used to smooth short-term fluctuations.
-     - Highlighted overall trends with different order settings.
-   - **Simple Exponential Smoothing (SES)**:
-     - Captures the level of the time series using a smoothing parameter.
-     - Provides a stable forecast for stationary data.
-
-4. **Residual Analysis**:
-   - Evaluated residuals for randomness and patterns.
-   - Checked autocorrelation using ACF plots to validate model fit.
-
-5. **Forecasting**:
-   - Forecasted sales for the next 12 months using SES and compared it with Naïve forecasts.
-   - Generated prediction intervals to account for uncertainty.
+- **Forecasting Methods**
+  - **Naive Method**
+  - **Simple Moving Average**
+  - **Simple Exponential Smoothing**
+  - **Holt-Winters Additive**
+  - **ARIMA`
 
 ---
 
-## **Key Insights**
-1. **Seasonality**:
-   - The dataset exhibits significant seasonal variations, as revealed by decomposition and seasonal indices.
+## **Key Steps**
+1. **Exploratory Data Analysis**
+   - Time series plots to visualize trends and seasonality.
+   - Decomposition of the time series into trend, seasonal, and remainder components.
 
-2. **Best Forecasting Model**:
-   - Simple Exponential Smoothing (SES) performed well with:
-     - **MAPE**: 4.20% (small percentage error).
-     - Residuals: Random with minimal autocorrelation.
+2. **Model Evaluation**
+   - Accuracy metrics: `ME`, `RMSE`, `MAE`, `MPE`, `MAPE`, `MASE`, `ACF1`.
+   - Residual analysis for each model:
+     - Residual time series plot.
+     - Histogram of residuals.
+     - ACF of residuals.
 
-3. **Predictions**:
-   - The SES forecast stabilizes at **16.13933 (million units)** for the next year, with increasing prediction uncertainty.
+3. **Forecasting**
+   - Short-term (1 year) and long-term (2 years) forecasts.
+   - Confidence intervals for predictions.
+   - Comparison of forecasted values across models.
 
-4. **Limitations**:
-   - Naïve and SES models do not capture trends or seasonality effectively.
-   - Advanced models like ARIMA or Holt-Winters are recommended for further improvement.
+4. **Model Selection**
+   - Based on accuracy metrics and residual diagnostics, **Holt-Winters Additive** is the best model for this dataset.
 
 ---
 
-## **How to Run the Code**
-1. Clone this repository:
-   ```bash
-   git clone <repository-url>
+## **Results**
+- **Best Model**: Holt-Winters Additive.
+  - Lowest RMSE, MAE, and MAPE.
+  - Effectively captures trend and seasonality.
+
+- **Future Predictions**
+  - The time series is expected to show stabilization with seasonal fluctuations over the next two years.
+
+- **Comparison**
+  - Holt-Winters Additive outperforms all other models.
+  - ARIMA serves as a strong alternative with comparable accuracy.
+
+---
+
+## **Conclusion**
+- **Holt-Winters Additive** is the recommended model for accurate and reliable forecasting of the sales data.
+- The value of the time series is expected to stabilize with seasonal variations.
+
+---
+
+## **Files**
+- **`BF_Final_Exam.Rmd`**: R Markdown file with the complete analysis.
+- **`TOTALSA.csv`**: Dataset used for the analysis.
+- **`README.md`**: Documentation for the project.
+
+---
+
+## **How to Run**
+1. Open the `BF_Final_Exam.Rmd` file in RStudio.
+2. Install the required libraries (`forecast`, `ggplot2`, etc.).
+3. Run the code chunks step by step to reproduce the analysis and plots.
+
+---
+
+## **Acknowledgments**
+- This project was completed as part of the Business Forecasting course.
+- Special thanks to the instructor for guidance throughout the course.
+
+---
+
+Feel free to explore the repository and provide feedback!
