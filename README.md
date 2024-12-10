@@ -1,7 +1,7 @@
-# **Business Forecasting with Time Series Analysis**
+# **Business Forecasting Final Exam**
 
 ## **Introduction**
-This repository contains the final exam submission for the Business Forecasting course. The analysis focuses on forecasting time series data using multiple statistical models and evaluating their performance. The dataset includes monthly sales data from 2019 to 2024.
+This repository contains the final exam submission for the Business Forecasting course. The analysis focuses on forecasting time series data using multiple statistical models and evaluating their performance. The dataset is includes monthly car sales data from 2019 to 2024.
 
 ---
 
