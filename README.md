@@ -20,7 +20,7 @@ This repository contains the final exam submission for the Business Forecasting 
   - **Simple Moving Average**
   - **Simple Exponential Smoothing**
   - **Holt-Winters Additive**
-  - **ARIMA`
+  - **ARIMA**
 
 ---
 
