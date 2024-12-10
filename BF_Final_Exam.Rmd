@@ -446,8 +446,370 @@ plot(ses_data)
 
 ##### Simple Smoothing Summary
 
-* The forecasted values remain constant, reflecting the characteristic of simple exponential smoothing, which assumes no trend or seasonality.
-* Prediction intervals (shaded regions) widen over time, indicating increasing uncertainty as the forecast horizon extends.
-* The model captures historical fluctuations to some extent, but the constant forecast suggests it does not account for recent downward trends.
-* The lack of trend or seasonality in the forecast highlights the model's inability to handle more complex patterns in the data.
-* The SES model performs well for data without trends or seasonality, but negative lower bounds suggest limitations in handling the data’s variability. For better accuracy, consider trend or seasonal models like Holt or Holt-Winters.
+* MAPE: 4.20%, indicating small percentage errors and good accuracy.
+* Residual Behavior: Random residuals with minimal autocorrelation (ACF1 = -0.0012).
+* Overall Fit: Performs well for stationary data without trends or seasonality.
+* Predicted value stabilizes at 16.13933 for the next year.
+* Forecast intervals widen symmetrically as uncertainty increases.
+* Stability: Works well for stationary time series data.
+* Uncertainty: Wider prediction intervals reflect growing uncertainty over time.
+* Limitation: Does not handle seasonality or trends, making it unsuitable for non-stationary data.
+
+
+##  Holt-Winters 
+* The Holt-Winters Method, also known as Triple Exponential Smoothing, is a powerful forecasting technique for time-series data that incorporates trend and seasonality components in addition to the level of the data. It extends the simpler exponential smoothing methods by accounting for data patterns that change over time.
+
+```{r}
+Hw_forecast <- hw(sales_ts_window, seasonal = "additive")
+plot(forecast(Hw_forecast))
+attributes(Hw_forecast)
+Hw_add <- forecast(Hw_forecast)
+```
+
+* Holt-Winters’ additive method accounts for both trend and seasonality.
+* The forecast captures periodic fluctuations, aligning with the observed seasonal pattern.
+* The forecast shows a stable trend with slight seasonal variations
+* Widen over time, reflecting increasing uncertainty with a longer forecast horizon.
+* Appropriate for time series with additive seasonality and consistent trends.
+
+###### Observations
+```{r}
+Hw_add$model
+```
+
+* Alpha (0.807): High, giving more weight to recent observations.
+* Beta (0.0001): Minimal trend smoothing, indicating a nearly static trend.
+* Gamma (0.0001): Minimal seasonal smoothing, keeping seasonality almost unchanged.
+* Values 1.0 means that the latest value has highest weight.
+* Initial states:
+    l = 16.1108  Baseline level of the series at the start.
+    b = -0.0142 Indicates a small upward trend initially.
+    s = -0.7835 -0.5428 -0.5113 -0.9156 -0.5135 0.152
+           0.3342 0.3312 1.28 0.8947 0.0681 0.2065 . Seasonal components reflect additive fluctuations across different periods.
+* Level (l): 16.1108, representing the baseline starting value.
+* Trend (b): -0.0142, indicating a slight downward trend initially.
+* Seasonality (s): Captures monthly seasonal effects, ranging from -0.9156 to 1.28  
+* AIC (143.30) and BIC (171.14): Indicate moderate model fit, with room for improvement.
+* The model emphasizes seasonality while keeping trend adjustments minimal, suitable for stable, seasonal data.
+
+##### Residual Analysis
+```{r}
+plot(Hw_add$residuals, main = "Residual Analysis of Holt Winters")
+```
+
+* Residuals fluctuate around zero, indicating no significant bias in the model.
+* No clear pattern suggests residuals are reasonably random.
+* Residuals range between -1.5 and +1.5, indicating moderate forecasting errors.
+* Occasional larger deviations suggest the model struggles with certain extreme values.
+* The residual analysis supports a good fit but highlights potential improvement for outliers.
+
+###### Histogram plot of residuals
+```{r}
+hist(Hw_add$residuals)
+```
+
+* Residuals are centered around zero, indicating minimal bias in the model.
+* Residuals follow a roughly normal distribution with most values between -1 and 1.
+* Few residuals lie beyond -1.5 and +1, suggesting occasional extreme deviations.
+* Histogram confirms a good overall fit with random residual distribution.
+
+###### Fitted values vs. residuals
+```{r}
+cbind(Fitted = fitted(Hw_add),
+      Residuals=residuals(Hw_add)) %>%
+  as.data.frame() %>%
+  ggplot(aes(x=Fitted, y=Residuals)) + geom_point()
+```
+
+* Residuals are scattered randomly around zero, indicating no significant bias.
+* The lack of a discernible trend suggests the model adequately captures the data structure.
+* Residuals show moderate dispersion across fitted values, with some outliers.
+* The plot confirms a reasonable model fit but highlights slight variability at extreme values.
+
+###### Actual values vs. residuals
+```{r}
+cbind(Data= sales_ts_window,
+      Residuals=residuals(Hw_add)) %>%
+  as.data.frame() %>%
+  ggplot(aes(x=Data, y=Residuals)) + geom_point()
+```
+
+* Similar to the previous plot, the Actual vs. Residuals plot appears to be random.
+* Residuals are randomly scattered around zero, indicating no clear bias in the model.
+* The residuals show no visible trend or relationship with the data, confirming a good model fit.
+* Residuals have moderate dispersion, ranging between -1.5 and +1.
+* A few data points show larger residuals, suggesting occasional difficulty in capturing extreme values.
+
+###### ACF plot of the residuals
+```{r}
+Acf(Hw_add$residuals)
+```
+
+* Most residuals fall within the confidence bounds, indicating minimal autocorrelation.
+* Residuals exhibit a generally random pattern, confirming a good model fit.
+* Small autocorrelation at certain lags suggests mild, insignificant patterns in residuals.
+* The plot supports the adequacy of the Holt-Winters additive model for this time series.
+
+##### Accuracy
+```{r}
+accuracy(Hw_add)
+```
+
+* ME (0.0149): Minimal bias in forecasts, indicating accurate centering.
+* RMSE (0.6834): Shows lower overall forecast error compared to previous models.
+* MAE (0.5539): Indicates good accuracy with small average absolute errors.
+* MPE (-0.0057%): Negligible underestimation in predictions.
+* MAPE (3.64%): Excellent performance with small percentage errors relative to actual values.
+* MASE (0.3017): The model performs much better than a naive forecast.
+* ACF1 (0.1236): Slight autocorrelation in residuals, but not significant enough to affect model validity.
+
+##### Forecast 
+```{r}
+forecast(Hw_forecast)
+plot(forecast(Hw_forecast))
+```
+* The forecast captures both a stable trend and periodic seasonal fluctuations.
+* Intervals widen over time, indicating increased uncertainty in long-term forecasts.
+
+##### Holtwinters Summary
+* Accuracy:
+* MAPE: 3.64% indicates excellent performance with small percentage errors.
+* RMSE: 0.6834 suggests low overall forecast error.
+* Residuals show minimal bias and randomness with slight autocorrelation (ACF1 = 0.1236).
+* One-Year Prediction:
+* The model predicts the time series value will stabilize around 15.8 to 16.2 (million units) for the next year, with  seasonality influencing monthly variations.
+* Other Observations:
+* Seasonality Captured: The additive method effectively captures the periodic fluctuations in the data.
+* Prediction Uncertainty: The intervals widen over time, reflecting greater uncertainty in long-term forecasts.
+* Strengths: Ideal for time series with consistent seasonality and trends.
+* Limitations: May not perform well if there are sudden shifts or non-linear trends in the data.
+* However, this forecast can still be improved as we can try forecasting using ARIMA models.
+
+## Fit ARIMA Model
+* ARIMA (AutoRegressive Integrated Moving Average) is a powerful statistical model used for time series analyzing and forecasting.It combines three components:
+* AutoRegressive (AR): Models the relationship between an observation and a number of lagged observations (past values).
+* Integrated (I): Applies differencing to make the data stationary (removes trends or seasonality).
+* Moving Average (MA): Captures the relationship between an observation and the residual errors from a moving average model applied to lagged observations.
+* ARIMA is widely used for time series forecasting, particularly when the data exhibits patterns that are not easily captured by simpler models.
+
+
+## Is the Time Series Data Stationary?
+```{r}
+adf_test <- adf.test(sales_ts_window)
+print(adf_test)
+```
+
+##### Output Interpretation:
+* Test for stationarity using the Augmented Dickey-Fuller (ADF) test.
+* If the p-value is < 0.05, the data is stationary.
+* Otherwise, the series needs differencing.
+
+## How Many Differences Are Needed to Make it Stationary?
+```{r}
+ndiffs(sales_ts_window)  # Non-seasonal differencing
+nsdiffs(sales_ts_window) # Seasonal differencing
+```
+
+##### Output Interpretation:
+* ndiffs gives the number of non-seasonal differences.
+* nsdiffs indicates if seasonal differencing is needed.
+
+## Is a Seasonality Component Needed?
+```{r}
+stl_decomp <- stl(sales_ts_window, s.window = "periodic")
+plot(stl_decomp)
+```
+
+##### Observation:
+* Use nsdiffs or inspect the decomposition of the time series to confirm.
+* If the seasonal component is significant, seasonality is required in the ARIMA model.
+
+## Plot the Differenced Series
+```{r}
+differenced_series <- diff(sales_ts_window, differences = 1)
+plot(differenced_series, main = "Differenced Series", ylab = "Differenced Sales", xlab = "Time")
+```
+
+## Based on ACF and PACF, Identify Possible ARIMA Models
+* ACF tapering and PACF cutoff → AR model.
+* PACF tapering and ACF cutoff → MA model.
+* Both tapering → ARIMA model.
+
+## Show AIC, BIC for Possible Models
+* Fit potential ARIMA models and compare metrics.
+```{r}
+model_1 <- Arima(sales_ts_window, order = c(1, 1, 0)) # Example ARIMA(1,1,0)
+model_2 <- Arima(sales_ts_window, order = c(0, 1, 1)) # Example ARIMA(0,1,1)
+model_3 <- Arima(sales_ts_window, order = c(1, 1, 1)) # Example ARIMA(1,1,1)
+
+AIC(model_1)
+AIC(model_2)
+AIC(model_3)
+
+BIC(model_1)
+BIC(model_2)
+BIC(model_3)
+```
+
+## Final Model Selection
+* Choose the model with the lowest AIC and BIC
+
+## Final ARIMA Formula and Coefficients
+```{r}
+final_model <- model_2 
+summary(final_model)
+```
+
+##### Interpretation
+* The best-selected model (model_2) is assigned to final_model for further analysis and evaluation.
+* Helps confirm the suitability of the selected model by analyzing its statistical properties, fit, and residual behavior.
+* Use this model for residual diagnostics, accuracy evaluation, and forecasting.
+
+## 3. Residual Analysis
+```{r}
+# Plot Residuals
+plot(final_model$residuals, main = "Residuals of ARIMA Model")
+
+# Histogram of Residuals
+hist(final_model$residuals, main = "Histogram of Residuals", xlab = "Residuals")
+
+# Fitted vs Residuals
+plot(fitted(final_model), final_model$residuals, main = "Fitted vs Residuals", xlab = "Fitted", ylab = "Residuals")
+
+# Actual vs Residuals
+plot(sales_ts_window, final_model$residuals, main = "Actual vs Residuals", xlab = "Actual", ylab = "Residuals")
+
+# ACF of Residuals
+Acf(final_model$residuals, main = "ACF of Residuals")
+```
+
+##### Interpretation
+* Plot Residuals: Displays the residuals over time to check for patterns. A random scatter without visible patterns indicates good model fit.
+* Histogram of Residuals: Assesses the distribution of residuals. A bell-shaped histogram suggests normally distributed residuals.
+* Fitted vs Residuals: Evaluates the relationship between fitted values and residuals. A random scatter indicates no systematic bias in the model.
+* Actual vs Residuals: Plots residuals against actual values to check for independence. A random pattern supports model adequacy.
+* ACF of Residuals: Assesses the autocorrelation of residuals. If residuals fall within the blue bounds, they exhibit no significant autocorrelation, confirming the model's validity.
+
+## Accuracy Measures
+```{r}
+accuracy(final_model)
+```
+
+##### Interpretation
+* Mean Error (ME): -0.0155 indicates minimal bias in the forecast.
+* Root Mean Square Error (RMSE): 0.847 shows the average magnitude of forecast errors is relatively small.
+* Mean Absolute Error (MAE): 0.641 represents a small average absolute error.
+* Mean Percentage Error (MPE): -0.258% indicates the model slightly under-forecasts on average.
+* Mean Absolute Percentage Error (MAPE): 4.20% shows excellent accuracy with minimal percentage errors.
+* Mean Absolute Scaled Error (MASE): 0.349 implies the model performs better than naive forecasts.
+* Autocorrelation of Residuals (ACF1): -0.0033 indicates no significant autocorrelation, suggesting the residuals are white noise.
+
+## Forecast Next One Year
+```{r}
+forecast_first <- forecast(final_model, h = 12)
+plot(forecast_first, main = "One-Year Forecast")
+print(forecast_first)
+```
+
+##### Interpretation
+*  The forecast for the next year remains consistent with historical data trends.
+* The prediction intervals are relatively narrow compared to the two-year forecast, indicating higher confidence in the short term.
+* The forecast captures seasonal variations in the time series.
+* The forecasted values center around 16, reflecting stable sales over the next year.
+* The one-year forecast demonstrates good alignment with past trends, suggesting reliable short-term predictions.
+
+## Forecast Next Two Year
+```{r}
+forecast_second <- forecast(final_model, h = 24)
+plot(forecast_second, main = "Two-Year Forecast")
+print(forecast_second)
+```
+
+##### Interpretation
+* The forecast shows a stable trend for the next two years.
+* The forecast uncertainty increases as we move further into the future, shown by widening confidence intervals.
+* The forecast captures seasonal patterns, reflected in periodic fluctuations.
+* By 2026, the forecasted values range between approximately 10 and 20, reflecting significant uncertainty.
+* The model predicts future values consistent with historical data trends.
+
+##### ARIMA Model Summary
+* Accuracy:
+* Use MAPE and RMSE from the accuracy function to report model performance.
+* Predictions:
+* One year: Provide forecast values and prediction intervals.
+* Two years: Provide forecast values and prediction intervals.
+
+##### Observations:
+* The ARIMA model effectively captures non-stationarity and seasonality.
+* Residual analysis confirms the model assumptions are valid.
+
+## Accuracy Summary of all four Models 
+```{r}
+# Calculate accuracy for each forecast
+naive_acc <- accuracy(naive_forecast)
+naive_acc
+ses_acc <- accuracy(ses_data)
+ses_acc
+hw_acc <- accuracy(Hw_forecast)
+hw_acc
+arima_acc <- accuracy(final_model)
+arima_acc
+
+# Create a summary of all accuracy measures
+accuracy_summary <- data.frame(
+  Model = c("Naive", "Exponential Smoothing", "Holt-Winters", "ARIMA"),
+  ME = c(naive_acc[1, "ME"], ses_acc[1, "ME"], hw_acc[1, "ME"], arima_acc[1, "ME"]),
+  RMSE = c(naive_acc[1, "RMSE"], ses_acc[1, "RMSE"], hw_acc[1, "RMSE"], arima_acc[1, "RMSE"]),
+  MAE = c(naive_acc[1, "MAE"], ses_acc[1, "MAE"], hw_acc[1, "MAE"], arima_acc[1, "MAE"]),
+  MPE = c(naive_acc[1, "MPE"], ses_acc[1, "MPE"], hw_acc[1, "MPE"], arima_acc[1, "MPE"]),
+  MAPE = c(naive_acc[1, "MAPE"], ses_acc[1, "MAPE"], hw_acc[1, "MAPE"], arima_acc[1, "MAPE"]),
+  MASE = c(naive_acc[1, "MASE"], ses_acc[1, "MASE"], hw_acc[1, "MASE"], arima_acc[1, "MASE"]),
+  ACF1 = c(naive_acc[1, "ACF1"], ses_acc[1, "ACF1"], hw_acc[1, "ACF1"], arima_acc[1, "ACF1"])
+)
+
+# Print the accuracy summary
+print(accuracy_summary)
+```
+
+## Comparison and Usefulness of Forecast Methods
+* Naive Method: Assumes the most recent observation is the forecast. Useful for data with no clear trend or seasonality.
+* Simple Moving Average: Averages values over a window, smoothing noise. Effective for stationary series with no strong trend/seasonality.
+* Simple Exponential Smoothing: Applies exponentially decreasing weights to past observations. Useful for data with no trend or seasonality but some noise.
+* Holt-Winters Additive: Captures level, trend, and seasonality. Best for data with a clear seasonal component.
+* ARIMA: Combines autoregression, differencing, and moving average. Suitable for both trend and seasonal data when properly configured.
+
+## Best & Worst Forecast Model 
+* ME:
+* Best: Naive Method (-0.0137)
+* Worst: Holt-Winters Additive (0.0149)
+* RMSE:
+* Best: Holt-Winters Additive (0.6834)
+* Worst: Naive Method (0.8615)
+* MAE:
+* Best: Holt-Winters Additive (0.5539)
+* Worst: Naive Method (0.6690)
+* MPE:
+* Best: Holt-Winters Additive (-0.0057)
+* Worst: Naive Method (-0.2400)
+* MAPE:
+* Best: Holt-Winters Additive (3.6358)
+* Worst: Naive Method (4.3904)
+* MASE:
+* Best: Holt-Winters Additive (0.3017)
+* Worst: Naive Method (0.3645)
+* ACF1:
+* Best: Simple Exponential Smoothing (-0.0012)
+* Worst: Holt-Winters Additive (0.1236)
+
+## Conclusion
+
+* The time series shows fluctuations over time with a seasonal component.
+* The sales trend stabilizes over recent years after an initial decline.
+* Different forecasting methods capture level, trend, and seasonality to varying extents.
+* The time series is likely to show moderate growth or stabilization based on recent trends.
+* Over the next two years, the time series is expected to stabilize with seasonal fluctuations.
+* Overall, Holt-Winters is the recommended model for accurate and reliable forecasting.
+* Ranking of Forecasting Methods:
+* Best Method: Holt-Winters Additive; it consistently provides the lowest RMSE, MAE, MPE, and MASE, indicating strong performance for this data.
+* Second Best: Simple Exponential Smoothing; performs well for RMSE and MAE with minimal residual bias.
+* Overall, Holt-Winters Additive is the recommended model for accurate and reliable forecasting due to its superior accuracy and ability to capture trend and seasonality.
