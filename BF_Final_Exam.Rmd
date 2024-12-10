@@ -1,0 +1,453 @@
+---
+title: "BF_Final_Exam"
+author: "Ritik Kumar"
+date: "2024-12-09"
+output: html_document
+---
+# Introduction to the Dataset:
+# The dataset represents monthly car sales in the United States. This dataset provides insights into the sales trends and patterns over time. Car sales are an important indicator of economic health, reflecting consumer confidence and disposable income levels.
+
+# The dataset contains two main variables:
+# Date: The month and year of the recorded sales.
+# Sales Units: The number of cars sold during each month.
+
+# Objective:
+# The goal is to perform a comprehensive time series analysis to:
+# Analyze trends, seasonality, and irregularities in car sales.
+# Forecast future sales using methods like Naïve, Moving Averages, Simple Smoothing, Holt-Winters, and ARIMA.
+# Compare forecasting method accuracies to determine the best model.
+
+## Importing the Data
+```{r}
+library(forecast)
+library(fpp)
+library(fpp2)
+library(readr)
+library(ggplot2)
+library(dplyr)
+
+# Load the dataset
+sales_data <- read_csv("C:/Users/malho/Downloads/BF_Final_Exam/TOTALSA.csv")
+
+# Print the first few rows to understand the structure of data
+print(head(sales_data))
+```
+
+* First we import the dataset and print the head of data to see our data must be succesfully uploaded or not.
+
+##### Converting the dataset into Times Series object
+```{r}
+# first Convert 'Date' column to Date type
+sales_data$Date <- as.Date(sales_data$Date, format = "%m/%d/%Y")
+
+# Converting data into Time Series 
+sales_ts <- ts(sales_data$`Sales Units`, start = c(2019, 1), frequency = 12)
+
+# Plot the original time series data of Sales Units from 2019-2024 to confirm
+plot(sales_ts, main = "Monthly Sales Units Solds in Millions", ylab = "Number of Sales Units in Millions", xlab = "Year")
+```
+
+##### Initial Observations
+* From 2019 to 2020, sales appear stable but drop sharply around 2020.
+* A significant rebound is visible post-2020, followed by fluctuating recovery trends from 2021 to 2024.
+* No strong cyclical seasonal patterns are visible.
+* The sharp dip in 2020 suggests an external factor affecting sales, possibly the pandemic.
+* Sales gradually stabilize after 2021, showing economic recovery.
+* If we have to forecast the data, we should be considering the window from 2021.
+
+## Considering only a window from 2021 to 2024
+```{r}
+# Creating a window of the time series from 2021 to February 2024
+sales_ts_window <- window(sales_ts, start = c(2021,1), end = c(2024,2))
+
+# Plot the window specific time series
+plot(sales_ts_window, main = "Time Series Plot of Sales Units (2021 to Feb 2024)", xlab = "Year", ylab = "Sales Units (in Millions)")
+```
+
+* The graph focuses on car sales from January 2021 to February 2024, providing a clearer view of post-pandemic recovery and stabilization.
+* In 2021, Starts with a sharp decline, likely a residual effect of the pandemic, showing a recovery midway.
+* From 2022-2024: Displays a steady upward trend, suggesting gradual stabilization and growth in car sales.
+* Short-term fluctuations are evident, with periodic dips and rises, but the overall trend is upward.
+* Compared to earlier years, this subset shows less variability, indicating a return to more predictable sales patterns.
+* Although seasonality is not immediately obvious, there may be mild seasonal fluctuations, which would need decomposition for confirmation.
+* This window is well-suited for analysis and forecasting, as it captures stabilized post-pandemic sales trends.
+* Using this windowed data for models like decomposition, Naive, ARIMA, and Holt-Winters to explore trends, seasonality, and irregularities.
+
+## Identify Central Tendency
+##### Min, max, mean, median, 1st and 3rd Quartile values of the times series
+```{r}
+summary(sales_ts_window)
+```
+
+* The summary function above gives the min, max, mean, median, 1st and 3rd Quartile values of the times series.
+* The lowest monthly sales recorded during this period is 12.72 million units, which likely corresponds to the sharp dip seen in 2021.
+* First Quartile (14.08 million units):25% of the months have sales below this value, indicating the lower range of sales during the recovery phase.
+* Median (15.47 million units):Half of the months have sales below this value, representing the central tendency or "typical" monthly sales during this period.
+* Mean (15.25 million units):The average monthly sales over the period are slightly lower than the median, suggesting that there are some lower values (e.g., the sharp dips in 2021) skewing the average downward.
+* Third Quartile (16.17 million units):75% of the months have sales below this value, indicating the higher range of typical sales.
+* Maximum Sales (Max):The highest monthly sales during this period is 18.70 million units, corresponding to the peak seen in 2021.
+
+##### Key Observations:
+* The range of sales (12.72 to 18.70 million units) highlights significant variation in monthly performance.
+* The median (15.47) being close to the mean (15.25) indicates a relatively symmetric distribution of sales.
+* The interquartile range (14.08 to 16.17) reflects the typical spread of monthly sales, with extremes being outliers or exceptional months.
+
+##### Box Plot
+```{r}
+boxplot(sales_ts_window, main ='Boxplot for Car Sales Units Time Series')
+hist(sales_ts_window)
+Acf(sales_ts_window)
+```
+
+##### Observations and Inferences
+* The boxplot visually summarizes the central tendency and spread of the time series data.
+* The median (~15.5 million units) is clearly visible within the interquartile range (IQR), reflecting typical monthly sales.
+* The IQR (~14.0 to 16.2 million units) captures the middle 50% of the data.
+* No extreme outliers are visible, suggesting a consistent range of sales with no significant anomalies.
+* The histogram shows the frequency distribution of monthly sales.
+* Most months fall within the range of 14 to 16 million units, aligning with the central measures from the summary statistics.
+* A smaller group of months exhibits higher sales (~18 million units), which could indicate exceptional periods.
+* The ACF plot reveals significant positive autocorrelations at lag 1 to lag 4, indicating a dependency between adjacent months.
+* Diminishing autocorrelation after lag 4 suggests short-term trends dominate.
+* The ACF confirms the presence of short-term trends, which may need further modeling using ARIMA or seasonal methods.
+* The data shows a stable, predictable range of sales, with some fluctuations.
+* The ACF suggests that sales in consecutive months are closely related, which is typical in time series data.
+* The histogram and boxplot reinforce that the sales distribution is balanced, with most months centered around the mean.
+
+## Decomposition
+
+##### Decomposition Plot
+
+```{r}
+stl_decomp <- stl(sales_ts_window, s.window = "periodic")
+plot(stl_decomp, main = 'Decomposition Plot of Car Sales Units')
+```
+# Observation:
+* The original time series exhibits noticeable fluctuations, with both seasonal patterns and an overall trend.
+* Clear repeating seasonal patterns are observed, indicating regular monthly variations in sales.
+* Peaks and troughs occur consistently, suggesting predictable seasonal behavior.
+* A declining trend is evident during 2021, followed by a steady upward recovery from 2022 onwards.
+* This aligns with broader economic recovery post-pandemic.
+* Residuals are small and randomly distributed, confirming that most variations are well explained by the trend and seasonality.
+
+##### Is the time series seasonal?
+* Yes, the time series is seasonal, as evident from the consistent repeating pattern observed in the seasonal component of the decomposition plot.
+
+##### Is the decomposition additive or multiplicative?
+
+```{r}
+decom <- decompose(sales_ts_window)
+decom$type
+```
+
+* The decomposition type is additive, meaning the time series can be expressed as:
+                          Data=Trend+Seasonality+Remainder 
+* This indicates that the seasonal fluctuations and residual variations are independent of the trend's magnitude.
+
+##### •	If seasonal, what are the values of the seasonal monthly indices? 
+```{r}
+decom$figure
+```
+
+* In time series decomposition, decom$figure refers to the seasonal component values extracted during the decomposition process in R.
+* It shows how much the seasonal component contributes to or detracts from the overall value for each time point in a single cycle.
+* Positive values indicate the time point contributes above average to the data.
+* Negative values indicate it contributes below average to the data.
+
+##### Observations and Inferences
+
+* High Impact Months: January (0.92) and April (0.91) have strong positive indices, indicating higher sales.
+* Low Impact Months: September (-1.09) and December (-0.76) show the lowest sales impact.
+* Moderate Impact: February (0.39) and March (0.43) have mild positive indices; November (-0.22) shows slight negative impact.
+* Seasonality: Clear monthly patterns influence sales, emphasizing the importance of seasonal adjustments.
+
+##### Seasonality adjusted plot
+```{r}
+plot(sales_ts_window, ylab = 'Sales Units')
+lines(seasadj(stl_decomp), col="Red")
+```
+
+* There are repeated fluctuations that can be observed after applying seasonal adjustment.
+* With time, these fluctuations will cause deviations and change our forecast. So, it is important to consider the seasonal variation in the data.
+* The Black Line represents the raw sales data, including both trend and seasonal effects.
+* Fluctuations are evident, influenced by both seasonality and irregular variations.
+* The red line represents the time series after removing seasonal effects using the seasadj() function.
+* The red line is smoother compared to the black line, focusing on the underlying trend and irregular components.
+* The difference between the black and red lines highlights the seasonal fluctuations, which have been removed in the seasonally adjusted data.
+* Seasonal adjustment makes it easier to observe long-term trends without seasonal distortions.
+* The upward trend from 2022 onward is clearer in the red line, showing recovery in sales after the decline in 2021.
+
+## Testing the various Forecasting methods for the given dataset
+
+## Naive Method 
+* The naive forecasting method is one of the simplest forecasting techniques. It assumes that the most recent observed value is the best predictor for all future values. This method does not account for trends, seasonality, or other patterns in the data.
+
+##### Output
+```{r}
+naive_forecast <- naive(sales_ts_window)
+plot(naive_forecast)
+```
+
+* The Naïve method forecasts a flat trend, using the most recent observed value as the baseline.
+* The prediction interval widens over time, indicating increasing uncertainty in the forecast.
+* The forecast does not account for seasonality or trends, reflecting the simplicity of the Naïve model.
+* Suitable as a baseline but may not be optimal for capturing underlying patterns.
+
+##### Perform Residual Analysis for this technique. 
+```{r}
+plot(naive_forecast$residuals, main = "Residual Analysis of Naive Model")
+```
+
+* Residuals fluctuate around zero, indicating errors are centered on actual values.
+* Visible patterns suggest the Naïve model does not capture trends and seasonality effectively.
+* Large residual spikes (~-1 to +2) highlight periods with significant forecast errors.
+* The Naïve model is a basic method and insufficient for accurate forecasting.
+
+###### Residuals Histogram
+```{r}
+hist(naive_forecast$residuals)
+```
+
+* Residuals are centered around zero, indicating minimal bias in the model.
+* The majority of residuals fall between -1 and 1, showing relatively small errors.
+* Few residuals are outside this range (~-2 and ~2), indicating occasional larger forecast errors.
+* The distribution is slightly skewed, suggesting the Naïve model does not perfectly capture the data variability.
+
+###### Fitted vs Residual Values
+```{r}
+cbind(Fitted = fitted(naive_forecast), 
+      Residuals = residuals(naive_forecast)) %>%
+  as.data.frame() %>%
+  ggplot( aes(x= Fitted, y= Residuals)) + geom_point()
+```
+
+* Residuals are scattered randomly around zero, suggesting no clear pattern.
+* Variability in residuals increases slightly with fitted values, indicating potential heteroscedasticity.
+* Lack of systematic patterns confirms the model's residuals are reasonably well-behaved.
+* Minor deviations suggest model improvements might capture additional structure in the data.
+
+###### Actual vs Residual values
+```{r}
+cbind(Actual=sales_ts_window,
+      Residuals=residuals(naive_forecast)) %>%
+  as.data.frame() %>%
+  ggplot(aes(x=Actual, y=Residuals)) + geom_point()
+```
+
+* Similar to the previous plot, The actual vs Residuals plot also appears not to be random. 
+* Residuals are scattered around zero, indicating minimal bias in the model.
+* No strong pattern between actual values and residuals, suggesting the model fits reasonably well.
+* Residual variability increases slightly for higher actual values, indicating potential heteroscedasticity.
+* Further refinement of the model might address minor deviations in residual distribution.
+
+###### ACF of residuals
+```{r}
+Acf(naive_forecast$residuals)
+```
+
+* Residuals show minor autocorrelation at lower lags, indicating potential model inadequacy.
+* Most lags fall within the confidence bounds, suggesting no significant autocorrelation overall.
+* Slight patterns in the ACF plot suggest the Naïve model does not fully capture the data structure.
+* A more sophisticated model might better account for trends and seasonality.
+
+##### Accuracy
+```{r}
+accuracy(naive_forecast)
+```
+* ME (-0.0137): Minimal mean error, indicating negligible bias in forecasts.
+* RMSE (0.8614): Shows the average magnitude of forecast errors, with moderate variability.
+* MAE (0.6690): Indicates average absolute forecast error, slightly lower than RMSE.
+* MPE (-0.2400): Forecasts slightly underestimate actual values on average.
+* MAPE (4.39%): Indicates forecasts are, on average, 4.39% off from actual values.
+* MASE (0.3645): Suggests good accuracy relative to a simple mean benchmark.
+* ACF1 (-0.0830): Weak autocorrelation in residuals, indicating reasonable randomness in errors.
+
+##### Forecast 
+```{r}
+forecast(naive_forecast)
+plot(forecast(naive_forecast))
+```
+
+* Prediction intervals grow wider with each step, reflecting reduced confidence in long-term predictions.
+* Intervals are symmetric around the flat forecast value (16.191), with no directional bias.
+* The Naïve method offers limited predictive power beyond short-term stability.
+* The Naïve method predicts a flat forecast of 16.191 for all future periods.
+* The 80% interval widens over time, starting at [15.087, 17.295] in March 2024 and growing to [12.699, 19.682] by December 2024.
+* The 95% interval expands further, indicating increasing uncertainty over time.
+* The forecast does not consider seasonality or trends, reflecting the Naïve method's simplicity.
+
+##### Naive Method Summary
+* The Naïve model provides basic forecasts with moderate accuracy.
+* Metrics like MAPE (4.39%) and MASE (0.3645) indicate reasonable performance as a baseline but not optimal for capturing seasonality or trends.
+* Residual analysis shows patterns, suggesting the model does not fully explain the data.
+* The forecast for one year ahead (March 2024 to February 2025) is consistently 16.191 across all months.
+* This flat prediction reflects the Naïve method's simplicity, relying on the most recent value as the forecast.
+* Prediction intervals grow wider with increasing forecast horizons, indicating reduced confidence.
+* The Naïve model assumes no changes in the underlying structure of the data, limiting its utility for time series with patterns.
+* Suitable as a quick baseline model but insufficient for datasets with seasonality or trends. Advanced models like ARIMA or Holt-Winters are recommended for better performance.
+
+## Simple Moving Averages
+* Simple Moving Averages (SMA) is a basic yet widely used time-series forecasting method. It calculates the average of a fixed number of past observations, updating the average as new data becomes available.
+
+##### Plot the graph for time series. 
+##### Simple Moving average of order 3, 6, and 9
+```{r}
+ma3_forecast = ma(sales_ts_window, order = 3)
+ma6_forecast = ma(sales_ts_window, order = 6)
+ma9_forecast = ma(sales_ts_window, order = 9)
+plot(sales_ts_window, main ="Plot along with moving averages")
+lines(ma3_forecast, col='Red')
+lines(ma6_forecast, col='Blue')
+lines(ma9_forecast, col='Green')
+```
+
+##### Observations
+
+* Black Line: Represents the original time series with observed fluctuations.
+* Red Line (shorter window): Captures short-term trends but follows fluctuations closely.
+* Blue and Green Lines (longer windows): Smooth out the data more effectively, reducing noise.
+* Trend Observation: Longer moving averages (blue/green) highlight the overall upward trend from 2022 onward.
+* Smoothing Effect: Higher smoothing levels reveal underlying patterns while suppressing short-term variations.
+
+##### Show the forecast for the next 12 months using one of the simple averageorders that you feel works best for time series
+```{r}
+ma3_forecast = ma(sales_ts_window, order = 3)
+plot(sales_ts_window, main ="Plot along with moving averages for 12 Months", h=12)
+lines(ma3_forecast, col='Red')
+```
+
+##### Observations
+* Black Line: Represents the original time series with observed fluctuations.
+* Red Line (3-Month Moving Average): Smooths short-term variations, revealing the underlying trend.
+* Trend Observation: The moving average follows the overall pattern closely, highlighting general direction while suppressing noise.
+* Effectiveness: A 3-month moving average is effective for reducing short-term noise while retaining most data features.
+* Using a 12-month moving average works best for this time series as it smooths seasonal fluctuations and highlights the overall trend.
+
+##### Observations as Moving Average Order Increases:
+* Higher Smoothing: Increasing the order reduces short-term fluctuations and noise, making trends more apparent.
+* Lag Effect: Higher-order moving averages lag behind the data, causing a delay in capturing sudden changes.
+* Seasonality Loss: As the order increases, seasonal patterns become less visible.
+* Best Use: Higher orders are ideal for long-term trend analysis but less effective for detecting short-term variations.
+
+## Simple Smoothing
+* Simple Smoothing, also known as Simple Exponential Smoothing (SES), is a forecasting method used for time-series data. It is designed to handle data without trends or seasonality by giving exponentially decreasing weights to past observations, with more weight assigned to recent data points.
+
+```{r}
+ses_data = ses(sales_ts_window)
+plot(ses_data)
+attributes(ses_data)
+```
+
+*Simple Exponential Smoothing: The forecast smooths fluctuations and predicts a stable trend.
+* Point Forecast: The forecast converges to a consistent value over the horizon.
+* Prediction Intervals: Uncertainty increases with time, as shown by the widening bands.
+* Trend Limitation: The method does not account for seasonality or long-term trend changes.
+* Best Use: Suitable for datasets with no strong trends or seasonality.
+
+```{r}
+summary(ses_data)
+```
+
+##### Observations 
+* Smoothing Parameter (Alpha): High value (0.9149) indicates strong weighting on recent observations.
+* Initial Level (l): Starting level of the forecast is 16.6662.
+* sigma:  0.8702 Sigma defines the variance in the forecast predicted.
+* Error Measures:
+* ME (-0.0152): Minimal bias in forecasts.
+* RMSE (0.8470) and MAE (0.6413): Indicate moderate forecast error.
+* MAPE (4.20%): Shows good accuracy with small percentage error.
+* Prediction Intervals: Widen as forecast horizon increases, reflecting growing uncertainty.
+* AIC/BIC: Moderate values (AIC=131.6, BIC=136.5) suggest model fit is reasonable but not optimal.
+* ACF1 (-0.0012): Minimal autocorrelation in residuals, indicating well-behaved errors.
+* Point Forecast: Stable forecast of 16.13933 for all future months.
+
+##### Residual Analysis
+```{r}
+plot(ses_data$residuals, main = "Residual Analysis of Simple Exponential Smoothing")
+```
+
+* Residuals fluctuate around zero, indicating no significant bias in the model.
+* No clear pattern in residuals, suggesting errors are random and the model fits well.
+* Residuals vary between -1 and +2, showing moderate forecasting errors.
+* Occasional spikes indicate periods where the model struggles to capture extreme variations.
+* Residual behavior suggests the model is appropriate for this time series but could be improved for extreme cases.
+
+###### Histogram plot of residuals
+```{r}
+hist(ses_data$residuals)
+```
+
+* Residuals are centered around zero, indicating no significant bias in the model.
+* Sigma defines the variance in the forecast predicted.
+* Slight right skewness, indicating occasional underestimation by the model.
+* Residuals range between -2 and +2, showing moderate forecasting errors.
+* The model handles the majority of data well but struggles with some extreme cases.
+
+###### Fitted values vs. residuals
+```{r}
+cbind(Fitted=fitted(ses_data),
+      Residuals=residuals(ses_data)) %>%
+  as.data.frame() %>%
+  ggplot(aes(x=Fitted,y=Residuals)) + geom_point()
+```
+
+* Residuals are randomly scattered around zero, indicating no obvious bias.
+* No clear trend or structure in residuals suggests the model is capturing the data well.
+* Residuals spread more for higher fitted values, indicating slight heteroscedasticity. 
+* The plot suggests a reasonably good fit but may require refinement for extreme values.
+
+###### Actual values vs. residuals
+```{r}
+cbind(Actual = sales_ts_window,
+      Residuals=residuals(ses_data)) %>%
+  as.data.frame() %>%
+  ggplot(aes(x=Actual, y=Residuals)) + geom_point()
+```
+
+* Similar to the previous plot, the Actual vs. Residuals plot appears to have some trend in the data.
+* Residuals are randomly scattered around zero, indicating no systematic bias.
+* No clear relationship between actual values and residuals, suggesting a good model fit.
+* Residuals slightly increase for higher actual values, indicating potential heteroscedasticity.
+* The model captures the overall structure well but may require adjustment for extreme values.
+
+###### ACF plot of the residuals
+```{r}
+Acf(ses_data$residuals)
+```
+
+* Most residual lags fall within the confidence bounds, indicating randomness.
+* Slight autocorrelation at lower lags suggests minor patterns in residuals.
+* The overall randomness confirms the model effectively explains the data.
+* Residual ACF supports the validity of the Simple Exponential Smoothing model for this dataset.
+
+##### Accuracy
+```{r}
+accuracy(ses_data)
+```
+
+* ME (-0.0152): Minimal bias in forecasts, indicating accurate centering.
+* RMSE (0.8470): Moderate root mean square error reflects overall forecast variability.
+* MAE (0.6413): Average absolute error shows reasonable accuracy in predictions.
+* MPE (-0.2569%): Forecasts slightly underestimate actual values on average.
+* MAPE (4.20%): Indicates the model's errors are, on average, 4.20% of actual values, showing good performance.
+* MASE (0.3494): Suggests the model performs significantly better than a naive benchmark.
+* ACF1 (-0.0012): Near-zero autocorrelation in residuals confirms randomness and model adequacy.
+
+##### Forecast 
+```{r}
+ses_data
+plot(ses_data)
+```
+
+* The forecast stabilizes around a constant value, reflecting the smoothing model.
+* Widen over time, indicating increased uncertainty in longer-term forecasts.
+* The method captures no significant trend changes, providing a flat projection.
+* Simple exponential smoothing is appropriate for stable data without strong seasonality or trends.
+
+##### Simple Smoothing Summary
+
+* The forecasted values remain constant, reflecting the characteristic of simple exponential smoothing, which assumes no trend or seasonality.
+* Prediction intervals (shaded regions) widen over time, indicating increasing uncertainty as the forecast horizon extends.
+* The model captures historical fluctuations to some extent, but the constant forecast suggests it does not account for recent downward trends.
+* The lack of trend or seasonality in the forecast highlights the model's inability to handle more complex patterns in the data.
+* The SES model performs well for data without trends or seasonality, but negative lower bounds suggest limitations in handling the data’s variability. For better accuracy, consider trend or seasonal models like Holt or Holt-Winters.
